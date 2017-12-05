@@ -1,0 +1,40 @@
+{
+  "name": "buzzee_backend",
+  "version": "1.0.0",
+  "description": "GooMood chatting app buzzee node backend",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node index.js"
+  },
+  "keywords": [
+    "buzzee",
+    "chatting",
+    "call"
+  ],
+  "author": "dongjin",
+  "license": "ISC",
+  "dependencies": {
+    "body-parser": "^1.18.2",
+    "cookie-parser": "^1.4.3",
+    "crypto": "^1.0.1",
+    "debug": "^3.1.0",
+    "ejs": "^2.5.7",
+    "express": "^4.16.2",
+    "express-fileupload": "^0.3.0",
+    "fcm-node": "^1.2.1",
+    "firebase-admin": "^5.5.0",
+    "fs": "0.0.1-security",
+    "https": "^1.0.0",
+    "jsonwebtoken": "^8.1.0",
+    "morgan": "^1.9.0",
+    "mysql": "^2.15.0",
+    "node-gcm": "^0.14.9",
+    "node-php-password": "^0.1.2",
+    "path": "^0.12.7",
+    "random-string": "^0.2.0",
+    "serve-favicon": "^2.4.5",
+    "socket.io": "^2.0.4",
+    "underscore": "^1.8.3"
+  }
+}
