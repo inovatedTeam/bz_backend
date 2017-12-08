@@ -13,7 +13,7 @@ var app_secret_key = "7d3d3b6c2d3683bf25bbb51533ec6dab"
 
 var port = 8442
 var duration_time = 86400 //60 * 60 * 24
-    DB_HOST = "localhost"
+    DB_HOST = "185.19.28.220"
     DB_USER = "root"
     DB_PASS = "chengge111"
     DB_NAME = "happydemy"
