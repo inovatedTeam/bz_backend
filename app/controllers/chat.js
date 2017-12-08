@@ -5,55 +5,9 @@
 var common = require("../config/common")
 var config = require('../config/config')
 var db = require('../config/database')
-var jwt = require("jsonwebtoken")
 var path = require("path")
 
 var randomString = require('random-string')
-
-
-function checkAudentication(req, res, callback) {
-    var bad_result = {
-
-    };
-    if(!req.headers['token']){
-        res.status(401)
-        var message = 'There is no authenticate token.';
-        return common.sendFullResponse(res, 300,{}, message);
-    }
-    var token = req.headers['token']
-    if (token) {
-        jwt.verify(token, config.securty_key, function(err, decoded) {
-            if (err) {
-                res.status(401)
-                var message = 'There is invalid authenticate token.';
-                common.sendFullResponse(res, 300,{}, message);
-            } else {
-                db.query('SELECT * FROM users WHERE mobileToken = ?', token, function(err, userdata) {
-                    if (err){
-                        res.status(401);
-                        var message = "Your token expired, Please login again.";
-                        console.log(message);
-                        common.sendFullResponse(res, 300,bad_result, message);
-                    }
-                    if(userdata.length == 0){
-                        res.status(401);
-                        var message = "Your token expired, Please login again.";
-                        console.log(message);
-                        common.sendFullResponse(res, 300, bad_result, message);
-                    }else{
-                        // return user_id
-                        return callback(userdata[0])
-                    }
-                });
-
-            }
-        });
-
-    } else {
-        var message = 'No token provided.';
-        common.sendFullResponse(res, 300,{}, message);
-    }
-}
 
 function timeSince(date) {
     return Date.now() - date
@@ -90,7 +44,6 @@ function sendHistory(req, res, room_id, last_message_id, callback){
     var filter = [room_id, last_message_id];
     db.query(sql, filter, function(err, result) {
         if (err){
-            res.status(401);
             var message = "Sorry! Error occurred in Database.";
             common.sendFullResponse(res, 300, bad_result, message);
         }
@@ -103,7 +56,7 @@ function sendHistory(req, res, room_id, last_message_id, callback){
                 user_id : result[i].user_id,
                 message : result[i].message,
                 group_id : result[i].group_id,
-                media : result[i].id,
+                media : result[i].media,
                 media_type : result[i].media_type,
                 state : result[i].state,
                 quote : result[i].quote_id,
@@ -134,7 +87,7 @@ function getFileName( filename){
 }
 
 exports.sendMessage = function(req, res){
-    checkAudentication(req, res, function(user) {
+    common.checkAudentication(req, res, function(user) {
 
         var bad_result = {};
         if (req.body.room_id == undefined) {
@@ -153,12 +106,10 @@ exports.sendMessage = function(req, res){
             duration = parseInt(req.body.duration)
         }
 
-        var is_attach = req.body.is_attach
         var created = Date.now();
-        if(media_type != "chat"){
+        if(media_type != 1){
             // file upload
             if (!req.files){
-                res.status(400)
                 var message = 'No files were uploaded.';
                 return common.sendFullResponse(res, 300,{}, message);
             }
@@ -167,7 +118,6 @@ exports.sendMessage = function(req, res){
             var newFileName = getFileName(req.files.media.name);
             media.mv('./public/media/'+newFileName, function(err) {
                 if (err){
-                    res.status(400)
                     var message = 'File Upload Error.';
                     return common.sendFullResponse(res, 300,{}, message);
                 }
@@ -176,7 +126,6 @@ exports.sendMessage = function(req, res){
                 var values = [ room_id, group_id, user.id, '', media_type, newFileName, 0, 0, duration, created];
                 db.query( sql, [values], function(err, result){
                     if (err){
-                        res.status(401);
                         var message = "Sorry! Error occurred in Database.";
                         common.sendFullResponse(res, 300, bad_result, err);
                     }
@@ -188,22 +137,21 @@ exports.sendMessage = function(req, res){
 
                     db.query(sql, filter, function(err, tokens) {
                         if (err){
-                            res.status(401);
                             var message = "Sorry! Error occurred in Database.";
                             common.sendFullResponse(res, 300, bad_result, message);
                         }
                         var arrayMessageData = {
                             actionType: 'socket_new_message_server',
-                            sender_id: user.id.toString(),
+                            sender_id: user.id,
                             receiver_id: receiver_id,
-                            message_id: message_id.toString(),
+                            message_id: message_id,
                             chat_message: "",
                             senderName: tokens[0].username,
                             created: created.toString(),
-                            group_id: group_id.toString(),
+                            group_id: group_id,
                             media_type : media_type,
                             media : config.server_media_path + newFileName,
-                            state : "0",
+                            state : 0,
                             duration: duration.toString(),
                             senderImage: config.server_image_path + tokens[0].picture
                         }
@@ -228,7 +176,6 @@ exports.sendMessage = function(req, res){
             var values = [ room_id, group_id, user.id, chat_message, media_type, '', 0, 0, duration, created];
             db.query( sql, [values], function(err, result){
                 if (err){
-                    res.status(401);
                     var message = "Sorry! Error occurred in Database.";
                     common.sendFullResponse(res, 300, bad_result, err);
                 }
@@ -240,27 +187,26 @@ exports.sendMessage = function(req, res){
 
                 db.query(sql, filter, function(err, tokens) {
                     if (err){
-                        res.status(401);
                         var message = "Sorry! Error occurred in Database.";
                         common.sendFullResponse(res, 300, bad_result, message);
                     }
                     var arrayMessageData = {
                         actionType: 'socket_new_message_server',
-                        sender_id: user.id.toString(),
-                        receiver_id: receiver_id.toString(),
-                        message_id: message_id.toString(),
+                        sender_id: user.id,
+                        receiver_id: receiver_id,
+                        message_id: message_id,
                         chat_message: chat_message,
                         senderName: tokens[0].username,
                         created: created.toString(),
-                        group_id: group_id.toString(),
+                        group_id: group_id,
                         media_type : media_type,
                         media : "",
-                        state : "0",
-                        duration: duration.toString(),
+                        state : 0,
+                        duration: duration,
                         senderImage: config.server_image_path + tokens[0].picture
                     }
 
-                    if(tokens[0].receiver_state.toString() == "6"){
+                    if(tokens[0].receiver_state == 6){
                         var message = "Sorry! Receiver account blocked."
                         console.log(message)
                         common.sendFullResponse(res, 300, bad_result, message)
@@ -279,7 +225,7 @@ exports.sendMessage = function(req, res){
 }
 
 exports.deleteMessage = function(req, res){
-    checkAudentication(req, res, function(user) {
+    common.checkAudentication(req, res, function(user) {
 
         var bad_result = {};
         if (req.body.message_id == undefined) {
@@ -294,7 +240,6 @@ exports.deleteMessage = function(req, res){
         var sql = "UPDATE bz_messages SET message='This message has been removed.', state = 5 WHERE id = ?";
         db.query( sql, message_id, function(err, result){
             if (err){
-                res.status(401);
                 var message = "Sorry! Error occurred in Database.";
                 common.sendFullResponse(res, 300, bad_result, err);
             }
@@ -305,22 +250,21 @@ exports.deleteMessage = function(req, res){
 
             db.query(sql, filter, function(err, tokens) {
                 if (err){
-                    res.status(401);
                     var message = "Sorry! Error occurred in Database.";
                     common.sendFullResponse(res, 300, bad_result, message);
                 }
                 var arrayMessageData = {
                     actionType: 'delete message',
                     message:'This message has been removed.',
-                    sender_id: user.id.toString(),
-                    receiver_id: receiver_id.toString(),
-                    message_id: message_id.toString(),
+                    sender_id: user.id,
+                    receiver_id: receiver_id,
+                    message_id: message_id,
                     senderName: tokens[0].username,
-                    created: created.toString(),
-                    state: "5",
-                    group_id: "0"
+                    created: created,
+                    state: 5,
+                    group_id: 0
                 }
-                if(tokens[0].receiver_state.toString() == "6"){
+                if(tokens[0].receiver_state == 6){
                     var message = "Sorry! Receiver account blocked."
                     console.log(message)
                     common.sendFullResponse(res, 300, bad_result, message)
@@ -337,7 +281,7 @@ exports.deleteMessage = function(req, res){
 }
 
 exports.editMessage = function(req, res){
-    checkAudentication(req, res, function(user) {
+    common.checkAudentication(req, res, function(user) {
 
         var bad_result = {};
         if (req.body.message_id == undefined) {
@@ -353,7 +297,6 @@ exports.editMessage = function(req, res){
         var sql = 'UPDATE bz_messages SET message = ?, state = 4 WHERE id = ?';
         db.query( sql, [chat_message, message_id], function(err, result){
             if (err){
-                res.status(401);
                 var message = "Sorry! Error occurred in Database.";
                 common.sendFullResponse(res, 300, bad_result, err);
             }
@@ -364,22 +307,21 @@ exports.editMessage = function(req, res){
 
             db.query(sql, filter, function(err, tokens) {
                 if (err){
-                    res.status(401);
                     var message = "Sorry! Error occurred in Database.";
                     common.sendFullResponse(res, 300, bad_result, message);
                 }
                 var arrayMessageData = {
                     actionType: 'edit message',
-                    sender_id: user.id.toString(),
-                    receiver_id: receiver_id.toString(),
-                    message_id: message_id.toString(),
+                    sender_id: user.id,
+                    receiver_id: receiver_id,
+                    message_id: message_id,
                     senderName: tokens[0].username,
                     message: chat_message,
-                    state: "4",
+                    state: 4,
                     created: created.toString(),
-                    group_id: "0"
+                    group_id: 0
                 }
-                if(tokens[0].receiver_state.toString() == "6"){
+                if(tokens[0].receiver_state == 6){
                     var message = "Sorry! Receiver account blocked."
                     console.log(message)
                     common.sendFullResponse(res, 300, bad_result, message)
@@ -396,7 +338,7 @@ exports.editMessage = function(req, res){
 }
 
 exports.getHistory = function(req, res) {
-    checkAudentication(req, res, function(user) {
+    common.checkAudentication(req, res, function(user) {
 
         var bad_result = {};
         var last_message_id = req.body.last_message_id;
@@ -406,7 +348,6 @@ exports.getHistory = function(req, res) {
         var filter = [user.id, receiver_id, receiver_id, user.id]
         db.query(sql, filter, function(err, result) {
             if (err){
-                res.status(401);
                 var message = "Sorry! Error occurred in Database.";
                 common.sendFullResponse(res, 300, bad_result, message);
             }
@@ -415,7 +356,6 @@ exports.getHistory = function(req, res) {
                 var values = [user.id, receiver_id, Date.now().toString()];
                 db.query('INSERT INTO bz_rooms(sender_id, receiver_id, created) VALUES ( ? ) ', [values], function(err, result){
                     if (err){
-                        res.status(401);
                         var message = "Sorry! Error occurred in Database1.";
                         common.sendFullResponse(res, 300, bad_result, err);
                     }
@@ -428,9 +368,46 @@ exports.getHistory = function(req, res) {
                 })
             }else{
                 sendHistory(req, res, result[0].id, last_message_id)
-                // res.status(401);
                 // var message = "Sorry! Error occurred in create new room.";
                 // common.sendFullResponse(res, 300, bad_result, message);
+            }
+        });
+    })
+}
+
+exports.createConversation = function(req, res) {
+    common.checkAudentication(req, res, function(user) {
+
+        var bad_result = {};
+        var receiver_id = req.body.receiver_id;
+
+        var sql = 'SELECT * FROM bz_rooms WHERE (sender_id = ? and receiver_id = ?) or (sender_id = ? and receiver_id = ?) ';
+        var filter = [user.id, receiver_id, receiver_id, user.id]
+        db.query(sql, filter, function(err, result) {
+            if (err){
+                var message = "Sorry! Error occurred in Database.";
+                common.sendFullResponse(res, 300, bad_result, message);
+            }
+            if(result.length == 0){
+                // create new room
+                var values = [user.id, receiver_id, Date.now().toString()];
+                db.query('INSERT INTO bz_rooms(sender_id, receiver_id, created) VALUES ( ? ) ', [values], function(err, result){
+                    if (err){
+                        var message = "Sorry! Error occurred in Database1.";
+                        common.sendFullResponse(res, 300, bad_result, err);
+                    }
+                    var good_result = {
+                        room_id : result.insertId
+                    };
+                    var message = "create room successfully."
+                    common.sendFullResponse(res, 200, good_result, message)
+                })
+            }else{
+                var good_result = {
+                    room_id : result[0].id
+                };
+                var message = "room already created."
+                common.sendFullResponse(res, 200, good_result, message);
             }
         });
     })
@@ -473,7 +450,7 @@ exports.chatUserList = function(req, res) {
 };
 
 exports.quoteMessage = function(req, res){
-    checkAudentication(req, res, function(user) {
+    common.checkAudentication(req, res, function(user) {
 
         var bad_result = {};
         if (req.body.room_id == undefined) {
@@ -496,7 +473,6 @@ exports.quoteMessage = function(req, res){
         if(media_type != "chat"){
             // file upload
             if (!req.files){
-                res.status(400)
                 var message = 'No files were uploaded.';
                 return common.sendFullResponse(res, 300,{}, message);
             }
@@ -505,7 +481,6 @@ exports.quoteMessage = function(req, res){
             var newFileName = getFileName(req.files.media.name);
             media.mv('./public/media/'+newFileName, function(err) {
                 if (err){
-                    res.status(400)
                     var message = 'File Upload Error.';
                     return common.sendFullResponse(res, 300,{}, message);
                 }
@@ -514,7 +489,6 @@ exports.quoteMessage = function(req, res){
                 var values = [ room_id, group_id, user.id, '', media_type, newFileName, 0, quote_id, duration, created];
                 db.query( sql, [values], function(err, result){
                     if (err){
-                        res.status(401);
                         var message = "Sorry! Error occurred in Database.";
                         common.sendFullResponse(res, 300, bad_result, err);
                     }
@@ -526,23 +500,22 @@ exports.quoteMessage = function(req, res){
 
                     db.query(sql, filter, function(err, tokens) {
                         if (err){
-                            res.status(401);
                             var message = "Sorry! Error occurred in Database.";
                             common.sendFullResponse(res, 300, bad_result, message);
                         }
                         var arrayMessageData = {
                             actionType: 'socket_new_message_server',
-                            sender_id: user.id.toString(),
+                            sender_id: user.id,
                             receiver_id: receiver_id,
-                            message_id: message_id.toString(),
+                            message_id: message_id,
                             chat_message: "",
                             senderName: tokens[0].username,
                             created: created.toString(),
-                            group_id: group_id.toString(),
+                            group_id: group_id,
                             media_type : media_type,
                             media : config.server_media_path + newFileName,
-                            state : "0",
-                            duration: duration.toString(),
+                            state : 0,
+                            duration: duration,
                             senderImage: config.server_image_path + tokens[0].picture
                         }
 
@@ -552,7 +525,6 @@ exports.quoteMessage = function(req, res){
                             common.sendFullResponse(res, 300, bad_result, message)
                         }else{
                             common.sendMessageThroughFCM(res, tokens[0].sender_token, tokens[0].receiver_token, arrayMessageData, function(response){
-                                // var message = "Message send successfully."
                                 common.sendFullResponse(res, 200, arrayMessageData, response)
                             })
                         }
@@ -566,7 +538,6 @@ exports.quoteMessage = function(req, res){
             var values = [ room_id, group_id, user.id, chat_message, media_type, '', 0, quote_id, duration, created];
             db.query( sql, [values], function(err, result){
                 if (err){
-                    res.status(401);
                     var message = "Sorry! Error occurred in Database.";
                     common.sendFullResponse(res, 300, bad_result, err);
                 }
@@ -578,33 +549,31 @@ exports.quoteMessage = function(req, res){
 
                 db.query(sql, filter, function(err, tokens) {
                     if (err){
-                        res.status(401);
                         var message = "Sorry! Error occurred in Database.";
                         common.sendFullResponse(res, 300, bad_result, message);
                     }
                     var arrayMessageData = {
                         actionType: 'socket_new_message_server',
-                        sender_id: user.id.toString(),
-                        receiver_id: receiver_id.toString(),
-                        message_id: message_id.toString(),
+                        sender_id: user.id,
+                        receiver_id: receiver_id,
+                        message_id: message_id,
                         chat_message: chat_message,
                         senderName: tokens[0].username,
                         created: created.toString(),
-                        group_id: group_id.toString(),
+                        group_id: group_id,
                         media_type : media_type,
                         media : "",
-                        state : "0",
-                        duration: duration.toString(),
+                        state : 0,
+                        duration: duration,
                         senderImage: config.server_image_path + tokens[0].picture
                     }
 
-                    if(tokens[0].receiver_state.toString() == "6"){
+                    if(tokens[0].receiver_state == 6){
                         var message = "Sorry! Receiver account blocked."
                         console.log(message)
                         common.sendFullResponse(res, 300, bad_result, message)
                     }else{
                         common.sendMessageThroughFCM(res, tokens[0].sender_token, tokens[0].receiver_token, arrayMessageData, function(response){
-                            // var message = "Message send successfully."
                             common.sendFullResponse(res, 200, arrayMessageData, response)
                         })
                     }

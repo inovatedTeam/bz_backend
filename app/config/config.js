@@ -14,9 +14,9 @@ var app_secret_key = "7d3d3b6c2d3683bf25bbb51533ec6dab"
 var port = 8442
 var duration_time = 86400 //60 * 60 * 24
     DB_HOST = "localhost"
-    DB_USER = "goomood_dongjin"
-    DB_PASS = "Chengge111!"
-    DB_NAME = "goomood_dev"
+    DB_USER = "root"
+    DB_PASS = "chengge111"
+    DB_NAME = "happydemy"
     port = 8443
 
 config = {
@@ -26,9 +26,9 @@ config = {
     db_name : DB_NAME,
     securty_key : "goomoodchatappbuzzee",
     FCMserverKey : "AAAAAgoYTNI:APA91bG81FXZ6a1QcKEj-rSbKl0wC1-41rlvSP-SvkKecJ9x_dAuUVt_DN5RjomNHyKUAKhriEOAYUMrTyV68vHR1meFLQKk6jOHuvDXlKdtVvVpUFrawnpLEJMQ0bXJ8eTHffw6V6l-",
-    server_url : "http://development.happydemy.com:8443/",
-    server_image_path : "http://development.happydemy.com:8443/user/",
-    server_media_path : "http://development.happydemy.com:8443/media/",
+    server_url : "http://185.19.28.220:8443/",
+    server_image_path : "http://185.19.28.220:8443/user/",
+    server_media_path : "http://185.19.28.220:8443/media/",
     pongInterval : 25000,
     message_duration_time : duration_time,
     serverPort : port,

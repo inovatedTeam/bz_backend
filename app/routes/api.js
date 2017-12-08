@@ -15,13 +15,13 @@ router.post("/user/login", account.login);
 router.post("/user/checkToken", account.checkToken);
 router.post("/user/findByUsername", account.findByUsername);
 router.post("/user/getProfile", account.getProfile);
-router.post("/user/updateProfile", account.updateProfile);
+router.post("/user/updateProfileAvatar", account.updateProfileAvatar);
 router.post("/user/updateProfileAbout", account.updateProfileAbout);
 router.post("/user/updateProfileStatus", account.updateProfileStatus);
 router.post("/user/updateTokenFCM", account.updateTokenFCM);
 router.post("/user/showPhoneReq", account.showPhoneReq);
 router.post("/user/block", account.blockRequest);
-router.post("/user/myPhoneViwers", account.myPhoneViwers);
+router.post("/user/myPhoneViewers", account.myPhoneViewers);
 router.post("/user/acceptPhoneRequest", account.acceptPhoneRequest);
 router.post("/user/rejectPhoneRequest", account.rejectPhoneRequest);
 
@@ -33,6 +33,7 @@ router.post("/chat/sendMessage", chat.sendMessage);
 router.post("/chat/deleteMessage", chat.deleteMessage);
 router.post("/chat/editMessage", chat.editMessage);
 router.post("/chat/quoteMessage", chat.quoteMessage);
+router.post("/chat/createConversation", chat.createConversation);
 
 /* notification */
 router.post("/notification/getNotification", notification.getNotification);

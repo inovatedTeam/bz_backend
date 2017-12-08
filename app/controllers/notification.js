@@ -42,7 +42,6 @@ exports.getNotification = function(req, res) {
         var filter = [user.id];
         db.query(sql, filter, function(err, result) {
             if (err){
-                res.status(401);
                 var message = "Sorry! Error occurred in Database.";
                 common.sendFullResponse(res, 300, bad_result, message);
             }

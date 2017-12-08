@@ -12,49 +12,45 @@ var randomString = require('random-string')
 
 var bad_result = {}
 
-function checkAudentication(req, res, callback) {
-    var bad_result = {
-
-    };
-    if(!req.headers['token']){
-        res.status(401)
-        var message = 'There is no authenticate token.';
-        return common.sendFullResponse(res, 300,{}, message);
-    }
-    var token = req.headers['token']
-    if (token) {
-        jwt.verify(token, config.securty_key, function(err, decoded) {
-            if (err) {
-                res.status(401)
-                var message = 'There is invalid authenticate token.';
-                common.sendFullResponse(res, 300,{}, message);
-            } else {
-                db.query('SELECT * FROM users WHERE mobileToken = ?', token, function(err, userdata) {
-                    if (err){
-                        res.status(401);
-                        var message = "Your token expired, Please login again.";
-                        console.log(message);
-                        common.sendFullResponse(res, 300,bad_result, message);
-                    }
-                    if(userdata.length == 0){
-                        res.status(401);
-                        var message = "Your token expired, Please login again.";
-                        console.log(message);
-                        common.sendFullResponse(res, 300, bad_result, message);
-                    }else{
-                        // return user_id
-                        return callback(userdata[0])
-                    }
-                });
-
-            }
-        });
-
-    } else {
-        var message = 'No token provided.';
-        common.sendFullResponse(res, 300,{}, message);
-    }
-}
+// function checkAudentication(req, res, callback) {
+//     var bad_result = {
+//
+//     };
+//     if(!req.headers['token']){
+//         var message = 'There is no authenticate token.';
+//         return common.sendFullResponse(res, 300,{}, message);
+//     }
+//     var token = req.headers['token']
+//     if (token) {
+//         jwt.verify(token, config.securty_key, function(err, decoded) {
+//             if (err) {
+//                 var message = 'There is invalid authenticate token.';
+//                 common.sendFullResponse(res, 300,{}, message);
+//             } else {
+//                 db.query('SELECT * FROM users WHERE mobileToken = ?', token, function(err, userdata) {
+//                     if (err){
+//                         var message = "Your token expired, Please login again.";
+//                         console.log(message);
+//                         common.sendFullResponse(res, 300,bad_result, message);
+//                     }
+//                     if(userdata.length == 0){
+//                         var message = "Your token expired, Please login again.";
+//                         console.log(message);
+//                         common.sendFullResponse(res, 300, bad_result, message);
+//                     }else{
+//                         // return user_id
+//                         return callback(userdata[0])
+//                     }
+//                 });
+//
+//             }
+//         });
+//
+//     } else {
+//         var message = 'No token provided.';
+//         common.sendFullResponse(res, 300,{}, message);
+//     }
+// }
 function checkPassword(password, userData) {
     if(Password.verify(password, userData.password)){
         console.log("password matched");
@@ -72,13 +68,11 @@ function sendSMSVerification(req, res, userData){
     // save database
     db.query('SELECT * FROM bz_short_codes WHERE user_id = ?', userData.id , function(err, chk_data) {
         if (err){
-            res.status(401);
             return 0;
         }
         if(chk_data.length == 0){
             db.query('INSERT INTO bz_short_codes SET ?', {user_id: userData.id, country: country, mobile : mobile, short_code : shortMessage} , function(err, result) {
                 if (err){
-                    res.status(401);
                     return 1;
                 }
                 return shortMessage;
@@ -86,7 +80,6 @@ function sendSMSVerification(req, res, userData){
         }else{
             db.query('UPDATE bz_short_codes SET ? WHERE user_id = '+userData.id, { country: country, mobile : mobile, short_code : shortMessage}, function(err, result) {
                 if (err){
-                    res.status(401);
                     throw err;
                     // return 2;
                 }
@@ -116,10 +109,10 @@ function getFileName( filename){
 }
 
 exports.checkToken = function (req, res) {
-    checkAudentication(req, res, function(user) {
+    common.checkAudentication(req, res, function(user) {
         var good_result = {
             user_id: user.id,
-            is_validToken : "1"
+            is_validToken : 1
         };
         var message = "Valid Token";
         common.sendFullResponse(res, 200, good_result, message);
@@ -143,13 +136,11 @@ exports.login = function(req, res) {
     var param = req.body;
     db.query('SELECT * FROM users WHERE username = ?', param.username, function(err, userdata) {
         if (err){
-            res.status(401);
             var message = "Sorry! Error occurred in login2.";
             console.log(message);
             common.sendFullResponse(res, 300,bad_result, message);
         }
         if(userdata.length == 0){
-            res.status(401);
             var message = "Sorry! Error occurred in login3.";
             console.log(message);
             common.sendFullResponse(res, 300, bad_result, message);
@@ -165,7 +156,6 @@ exports.login = function(req, res) {
                 // save token to database
                 db.query("UPDATE users SET mobileToken = '"+ token+"' WHERE id = ?", userdata[0].id, function(err) {
                     if (err){
-                        res.status(401);
                         var message = "Sorry! Error occurred in update mobileToken.";
                         common.sendFullResponse(res, 300, bad_result, message);
                     }
@@ -206,7 +196,7 @@ exports.login = function(req, res) {
 };
 
 exports.findByUsername = function(req, res) {
-    checkAudentication(req, res, function(user) {
+    common.checkAudentication(req, res, function(user) {
 
         var bad_result = {};
         if (req.body.search_username == undefined) {
@@ -217,12 +207,10 @@ exports.findByUsername = function(req, res) {
         var param = req.body;
         db.query('SELECT * FROM users WHERE username = ?', param.search_username, function(err, userdata) {
             if (err){
-                res.status(401);
                 var message = "Sorry! Error occurred in search user2.";
                 common.sendFullResponse(res, 300,bad_result, message);
             }
             if(userdata.length == 0){
-                res.status(401);
                 var message = "Sorry! Error occurred in search user3.";
                 common.sendFullResponse(res, 300,bad_result, message);
             }else{
@@ -248,7 +236,7 @@ exports.findByUsername = function(req, res) {
 }
 
 exports.getProfile = function(req, res) {
-    checkAudentication(req, res, function(user) {
+    common.checkAudentication(req, res, function(user) {
 
         var bad_result = {};
         if (req.body.user_id == undefined) {
@@ -258,12 +246,10 @@ exports.getProfile = function(req, res) {
         }
         db.query('SELECT * FROM users WHERE id = ?', req.body.user_id, function(err, userdata) {
             if (err){
-                res.status(401);
                 var message = "Sorry! Error occurred in getProfile2.";
                 common.sendFullResponse(res, 300, bad_result, message);
             }
             if(userdata.length == 0){
-                res.status(401);
                 var message = "Sorry! Error occurred in getProfile3.";
                 common.sendFullResponse(res, 300,bad_result, message);
             }else{
@@ -295,10 +281,9 @@ exports.getProfile = function(req, res) {
     })
 }
 
-exports.updateProfile = function (req, res) {
-    checkAudentication(req, res, function(user) {
+exports.updateProfileAvatar = function (req, res) {
+    common.checkAudentication(req, res, function(user) {
         if (!req.files){
-            res.status(400)
             var message = 'No files were uploaded.';
             return common.sendFullResponse(res, 300,{}, message);
         }
@@ -306,14 +291,12 @@ exports.updateProfile = function (req, res) {
         var newFileName = getFileName(req.files.photo.name);
         photo.mv('./public/images/profile/'+newFileName, function(err) {
             if (err){
-                res.status(400)
                 var message = 'File Upload Error.';
                 return common.sendFullResponse(res, 300,{}, message);
             }
             // file uploaded
             db.query("UPDATE users SET picture = '"+ newFileName+"' WHERE id = ?", user.id, function(err) {
                 if (err){
-                    res.status(401);
                     var message = "Sorry! Error occurred in update profile.";
                     common.sendFullResponse(res, 300, bad_result, message);
                 }
@@ -331,7 +314,7 @@ exports.updateProfile = function (req, res) {
 }
 
 exports.updateProfileAbout = function (req, res) {
-    checkAudentication(req, res, function(user) {
+    common.checkAudentication(req, res, function(user) {
         if (!req.body.about_me){
             var message = "Sorry! Error empty pushToken.";
             console.log(message);
@@ -340,7 +323,6 @@ exports.updateProfileAbout = function (req, res) {
         var about_me = req.body.about_me
         db.query("UPDATE users SET about_me = '"+ about_me +"' WHERE id = ?", user.id, function(err) {
             if (err){
-                res.status(401);
                 var message = "Sorry! Error occurred in update profile."
                 common.sendFullResponse(res, 300, bad_result, message)
             }
@@ -354,16 +336,15 @@ exports.updateProfileAbout = function (req, res) {
 }
 
 exports.updateProfileStatus = function (req, res) {
-    checkAudentication(req, res, function(user) {
+    common.checkAudentication(req, res, function(user) {
         if (!req.body.user_status){
             var message = "Sorry! Error empty pushToken."
             console.log(message)
             common.sendFullResponse(res, 300,bad_result, message)
         }
         var user_status = req.body.user_status
-        db.query("UPDATE users SET user_status = '"+ user_status +"' WHERE id = ?", user.id, function(err) {
+        db.query("UPDATE users SET user_status = "+ user_status +" WHERE id = ?", user.id, function(err) {
             if (err){
-                res.status(401);
                 var message = "Sorry! Error occurred in update profile."
                 common.sendFullResponse(res, 300, bad_result, message)
             }
@@ -377,7 +358,7 @@ exports.updateProfileStatus = function (req, res) {
 }
 
 exports.updateTokenFCM = function (req, res) {
-    checkAudentication(req, res, function(user) {
+    common.checkAudentication(req, res, function(user) {
         if (req.body.pushToken == undefined) {
             var message = "Sorry! Error empty pushToken.";
             console.log(message);
@@ -385,7 +366,6 @@ exports.updateTokenFCM = function (req, res) {
         }
         db.query("UPDATE users SET pushToken = '"+ req.body.pushToken+"' WHERE id = ?", user.id, function(err) {
             if (err){
-                res.status(401);
                 var message = "Sorry! Error occurred in update pushToken.";
                 common.sendFullResponse(res, 300, bad_result, message);
             }
@@ -401,7 +381,7 @@ exports.updateTokenFCM = function (req, res) {
 }
 
 exports.showPhoneReq = function (req, res) {
-    checkAudentication(req, res, function(user) {
+    common.checkAudentication(req, res, function(user) {
         if (req.body.target_id == undefined) {
             var message = "Sorry! Error empty selected user."
             console.log(message)
@@ -412,7 +392,6 @@ exports.showPhoneReq = function (req, res) {
         db.query("SELECT * FROM bz_show_phone WHERE sender_id = ? and receiver_id = ?", [user.id, receiver_id], function(err, data){
 
             if (err){
-                res.status(401);
                 var message = "Sorry! Error occurred in Show phone number request.";
                 common.sendFullResponse(res, 300, bad_result, message);
             }
@@ -424,7 +403,6 @@ exports.showPhoneReq = function (req, res) {
                 var values = [user.id, receiver_id, 0, created]
                 db.query('INSERT INTO bz_show_phone(sender_id, receiver_id, state, created) VALUES ( ? ) ', [values], function(err, result) {
                     if (err){
-                        res.status(401);
                         var message = "Sorry! Error occurred in Show phone number request.";
                         common.sendFullResponse(res, 300, bad_result, message);
                     }
@@ -434,7 +412,6 @@ exports.showPhoneReq = function (req, res) {
                     var filter = [receiver_id, receiver_id, user.id];
                     db.query(sql, filter, function(err, tokens) {
                         if (err){
-                            res.status(401);
                             var message = "Sorry! Error occurred in Database.";
                             common.sendFullResponse(res, 300, bad_result, err);
                         }
@@ -446,7 +423,7 @@ exports.showPhoneReq = function (req, res) {
                             receiver_id: receiver_id,
                             noti_message: noti_message,
                             senderName: tokens[0].username,
-                            created: created,
+                            created: created.toString(),
                             senderImage: config.server_image_path + tokens[0].picture
                         }
 
@@ -454,13 +431,11 @@ exports.showPhoneReq = function (req, res) {
                         var values = ['phone_request', user.id, receiver_id, new_id, noti_message, 0, created];
                         db.query("INSERT INTO bz_noti(noti_type, sender_id, receiver_id, reference_id, noti_message, state, created) VALUES ( ? )",[values], function(err, result_noti){
                             if (err){
-                                res.status(401);
                                 var message = "Sorry! Error occurred in Show phone number request.";
                                 common.sendFullResponse(res, 300, bad_result, message);
                             }
-                            if(tokens[0].receiver_state == "6"){
+                            if(tokens[0].receiver_state == 6){
                                 var message = "Sorry! Receiver account blocked."
-                                console.log(message)
                                 common.sendFullResponse(res, 300, bad_result, message)
                             }else{
                                 common.sendMessageThroughFCM(res, tokens[0].sender_token, tokens[0].receiver_token, arrayNotiData, function(response){
@@ -482,9 +457,8 @@ exports.showPhoneReq = function (req, res) {
                 }else{
                     var request_id = data[0].id
                     // update state = 1
-                    db.query("UPDATE bz_show_phone SET state = '0' WHERE sender_id = ? and receiver_id = ?", [user.id, receiver_id], function(err) {
+                    db.query("UPDATE bz_show_phone SET state = 0 WHERE sender_id = ? and receiver_id = ?", [user.id, receiver_id], function(err) {
                         if (err){
-                            res.status(401);
                             var message = "Sorry! Error occurred in Show phone number request.";
                             common.sendFullResponse(res, 300, bad_result, message);
                         }
@@ -494,7 +468,6 @@ exports.showPhoneReq = function (req, res) {
                         var filter = [receiver_id, receiver_id, user.id];
                         db.query(sql, filter, function(err, tokens) {
                             if (err){
-                                res.status(401);
                                 var message = "Sorry! Error occurred in Database.";
                                 common.sendFullResponse(res, 300, bad_result, message);
                             }
@@ -502,8 +475,8 @@ exports.showPhoneReq = function (req, res) {
                             var arrayNotiData = {
                                 show_id : request_id,
                                 actionType: 'phone_request',
-                                sender_id: user.id.toString(),
-                                receiver_id: receiver_id.toString(),
+                                sender_id: user.id,
+                                receiver_id: receiver_id,
                                 noti_message: noti_message,
                                 senderName: tokens[0].username,
                                 created: created.toString(),
@@ -514,18 +487,15 @@ exports.showPhoneReq = function (req, res) {
                             var values = ['phone_request', user.id, receiver_id, request_id, noti_message, 0, created];
                             db.query("INSERT INTO bz_noti(noti_type, sender_id, receiver_id, reference_id, noti_message, state, created)",[], function(err, result_noti){
                                 if (err){
-                                    res.status(401);
                                     var message = "Sorry! Error occurred in Show phone number request.";
                                     common.sendFullResponse(res, 300, bad_result, message);
                                 }
 
-                                if(tokens[0].receiver_state.toString() == "6"){
+                                if(tokens[0].receiver_state == 6){
                                     var message = "Sorry! Receiver account blocked."
-                                    console.log(message)
                                     common.sendFullResponse(res, 300, bad_result, message)
                                 }else{
                                     common.sendMessageThroughFCM(res, tokens[0].sender_token, tokens[0].receiver_token, arrayNotiData, function(response){
-                                        // var message = "Message send successfully."
                                         common.sendFullResponse(res, 200, arrayNotiData, response)
                                     })
                                 }
@@ -542,7 +512,7 @@ exports.showPhoneReq = function (req, res) {
 }
 
 exports.blockRequest = function (req, res) {
-    checkAudentication(req, res, function(user) {
+    common.checkAudentication(req, res, function(user) {
         if (req.body.target_id == undefined) {
             var message = "Sorry! Error empty selected user."
             console.log(message)
@@ -553,7 +523,6 @@ exports.blockRequest = function (req, res) {
         db.query("SELECT * FROM bz_block WHERE sender_id = ? and receiver_id = ?", [user.id, receiver_id], function(err, data){
 
             if (err){
-                res.status(401);
                 var message = "Sorry! Error occurred in block user.";
                 common.sendFullResponse(res, 300, bad_result, message);
             }
@@ -564,7 +533,6 @@ exports.blockRequest = function (req, res) {
                 var values = [user.id, receiver_id, created]
                 db.query("INSERT INTO bz_block(sender_id, receiver_id, created) VALUES(?)", [values], function(err, result) {
                     if (err){
-                        res.status(401);
                         var message = "Sorry! Error occurred in block user request.";
                         common.sendFullResponse(res, 300, bad_result, message);
                     }
@@ -582,19 +550,17 @@ exports.blockRequest = function (req, res) {
     })
 }
 
-exports.myPhoneViwers = function(req, res) {
-    checkAudentication(req, res, function(user) {
+exports.myPhoneViewers = function(req, res) {
+    common.checkAudentication(req, res, function(user) {
 
         var bad_result = {};
         var sql = "SELECT a.id, b.username, b.picture, a.state FROM bz_show_phone a LEFT JOIN users b ON a.receiver_id = ? and a.sender_id = b.id ORDER BY a.created DESC "
         db.query(sql, user.id, function(err, result) {
             if (err){
-                res.status(401);
                 var message = "Sorry! Error occurred in show my phone number to .";
                 common.sendFullResponse(res, 300,bad_result, message);
             }
             if(result.length == 0){
-                res.status(401);
                 var message = "Sorry! Error occurred in show my phone number to .";
                 common.sendFullResponse(res, 300,bad_result, message);
             }else{
@@ -603,10 +569,10 @@ exports.myPhoneViwers = function(req, res) {
                 var result_arr = [];
                 for (var i=0; i < result.length; i ++ ){
                     var temp = {
-                        show_id : result[i].id.toString(),
+                        show_id : result[i].id,
                         username : result[i].username,
                         photo : config.server_image_path + result[i].picture,
-                        state : result[i].state.toString()
+                        state : result[i].state
                     }
                     result_arr.push(temp)
                 }
@@ -621,7 +587,7 @@ exports.myPhoneViwers = function(req, res) {
 }
 
 exports.acceptPhoneRequest = function (req, res) {
-    checkAudentication(req, res, function(user) {
+    common.checkAudentication(req, res, function(user) {
         if (req.body.show_id == undefined) {
             var message = "Sorry! Error empty id."
             console.log(message)
@@ -631,7 +597,6 @@ exports.acceptPhoneRequest = function (req, res) {
         var show_id = req.body.show_id
         db.query("UPDATE bz_show_phone SET state = 1 WHERE id = ?", show_id, function(err, result) {
             if (err){
-                res.status(401);
                 var message = "Sorry! Error occurred in accept phone request.";
                 common.sendFullResponse(res, 300, bad_result, message);
             }
@@ -639,7 +604,6 @@ exports.acceptPhoneRequest = function (req, res) {
 
             db.query("DELETE FROM bz_noti WHERE noti_type = 'phone_request' and  receiver_id = ? and reference_id = ?", [ user.id, show_id], function(err, result_d) {
                 if (err){
-                    res.status(401);
                     var message = "Sorry! Error occurred in accept phone request.";
                     common.sendFullResponse(res, 300, bad_result, message);
                 }
@@ -655,7 +619,7 @@ exports.acceptPhoneRequest = function (req, res) {
 }
 
 exports.rejectPhoneRequest = function (req, res) {
-    checkAudentication(req, res, function(user) {
+    common.checkAudentication(req, res, function(user) {
         if (req.body.show_id == undefined) {
             var message = "Sorry! Error empty id."
             console.log(message)
@@ -665,7 +629,6 @@ exports.rejectPhoneRequest = function (req, res) {
         var show_id = req.body.show_id
         db.query("UPDATE bz_show_phone SET state = 2 WHERE id = ?", show_id, function(err, result) {
             if (err){
-                res.status(401);
                 var message = "Sorry! Error occurred in block user request.";
                 common.sendFullResponse(res, 300, bad_result, message);
             }
@@ -673,7 +636,6 @@ exports.rejectPhoneRequest = function (req, res) {
 
             db.query("DELETE FROM bz_noti WHERE noti_type = 'phone_request' and receiver_id = ? and reference_id = ?", [ user.id, show_id], function(err, result_d) {
                 if (err){
-                    res.status(401);
                     var message = "Sorry! Error occurred in reject phone request.";
                     common.sendFullResponse(res, 300, bad_result, message);
                 }

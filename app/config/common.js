@@ -33,7 +33,6 @@ exports.sendMessageThroughFCM = function(res, senderToken, receiverTokens, data,
     console.log(message)
     fcm.send(message, function(err, response){
         if (err) {
-            res.status(401)
             var message = 'There is an error on sending message To FCM : '+err;
             sendFullResponse1(res, 300,{}, message);
         } else {
@@ -130,7 +129,6 @@ exports.checkAudentication = function(req, res, callback) {
 
     };
     if(!req.headers['token']){
-        res.status(401)
         var message = 'There is no authenticate token.';
         sendFullResponse1(res, 300,{}, message);
     }
@@ -138,19 +136,16 @@ exports.checkAudentication = function(req, res, callback) {
     if (token) {
         jwt.verify(token, config.securty_key, function(err, decoded) {
             if (err) {
-                res.status(401)
                 var message = 'There is invalid authenticate token.';
                 sendFullResponse1(res, 300,{}, message);
             } else {
                 db.query('SELECT * FROM users WHERE mobileToken = ?', token, function(err, userdata) {
                     if (err){
-                        res.status(401);
                         var message = "Your token expired, Please login again.";
                         console.log(message);
                         sendFullResponse1(res, 300,bad_result, message);
                     }
                     if(userdata.length == 0){
-                        res.status(401);
                         var message = "Your token expired, Please login again.";
                         console.log(message);
                         sendFullResponse1(res, 300, bad_result, message);
